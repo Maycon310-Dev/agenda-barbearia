@@ -10,10 +10,24 @@ def agendar_horario(id_usuario):
 
     print("\n=== SERVIÇOS DISPONÍVEIS ===")
     listar_servicos()
+    
+    print("\n=== BARBEIROS DISPONÍVEIS ===")
+    listar_barbeiros()
 
     id_barbeiro = input("Digite o ID do barbeiro: ")
+
+    print("\n=== SERVIÇOS DISPONÍVEIS ===")
+    listar_servicos()
+
     id_servico = input("Digite o ID do serviço: ")
+
     data = input("Digite a data (dd/mm/aaaa): ")
+
+    mostrar_horarios_disponiveis(
+        id_barbeiro,
+        data
+    )
+
     hora = input("Digite a hora (hh:mm): ")
 
     # ==========================
@@ -497,3 +511,38 @@ def listar_agendamentoJoin(id_usuario=None, perfil=None):
 
     conn.close()
 
+def mostrar_horarios_disponiveis(id_barbeiro, data):
+
+    print("\n=== HORÁRIOS DISPONÍVEIS ===")
+    
+    conn = conectar()
+    cursor = conn.cursor()
+    cursor.execute("""
+    SELECT hora
+    FROM agendamentos
+    WHERE id_barbeiro = ?
+    AND data = ?
+    """, (
+        id_barbeiro,
+        data
+    ))
+
+    horarios_ocupados = []
+
+    for horario in cursor.fetchall():
+
+        horarios_ocupados.append(horario[0])
+
+    for hora in range(8, 20):
+
+        horario_cheio = f"{hora:02d}:00"
+
+        if horario_cheio not in horarios_ocupados:
+            print(horario_cheio)
+
+        horario_meia = f"{hora:02d}:30"
+
+        if horario_meia not in horarios_ocupados:
+            print(horario_meia)
+
+    conn.close()
