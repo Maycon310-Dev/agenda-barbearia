@@ -4,7 +4,7 @@ from clientes import (cadastrar_cliente, listar_clientes, buscar_cliente, exclui
 from servicos import (cadastrar_servico,  listar_servicos, excluir_servico, atualizar_servico)
 from profissionais import (cadastrar_barbeiro, listar_barbeiros, buscar_barbeiro)
 from agendamentos import (agendar_horario, listar_agendamentoJoin, cancelar_agendamento, buscar_agendamento, atualizar_agendamento)
-from usuario import (cadastrar_usuario)
+from usuarios import (cadastrar_cliente_com_usuario,cadastrar_barbeiro_com_usuario)
 from login import (login)
 
 
@@ -25,7 +25,7 @@ while True:
     print("          SISTEMA DE GESTÃO BARBEARIA")
     print("=" * 70)
     print("1 - Login")
-    print("2 - Criar Conta")
+    print("2 - Criar Conta Cliente")
     print("0 - Sair")
     print("=" * 70)
 
@@ -41,7 +41,7 @@ while True:
 
     elif acesso == "2":
         limpar_tela()
-        cadastrar_usuario()
+        cadastrar_cliente_com_usuario()
         voltar_menu()
         continue
 
@@ -86,12 +86,12 @@ while True:
 
             elif opcao == "2":
                 limpar_tela()
-                agendar_horario()
+                agendar_horario(usuario_logado[0])
                 voltar_menu()
 
             elif opcao == "3":
                 limpar_tela()
-                listar_agendamentoJoin()
+                listar_agendamentoJoin(usuario_logado[0],perfil)
                 voltar_menu()
 
             elif opcao == "4":
@@ -140,7 +140,7 @@ while True:
                 voltar_menu()
 
             elif opcao == "3":
-                listar_agendamentoJoin()
+                listar_agendamentoJoin(usuario_logado[0],perfil)
                 voltar_menu()
 
             elif opcao == "0":
@@ -231,7 +231,7 @@ while True:
 
             elif opcao == "10":
                 limpar_tela()
-                cadastrar_barbeiro()
+                cadastrar_barbeiro_com_usuario()
                 voltar_menu()
 
             elif opcao == "11":

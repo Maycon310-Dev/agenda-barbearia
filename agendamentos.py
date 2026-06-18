@@ -1,48 +1,232 @@
 from banco import conectar
+from profissionais import (listar_barbeiros)
+from servicos import (listar_servicos)
+from datetime import datetime, timedelta
 
-def agendar_horario():
+def agendar_horario(id_usuario):
 
-    cliente_id = input("Digite o ID do cliente: ")
-    profissional_id = input("Digite o ID do barbeiro: ")
-    servico_id = input("Digite o ID do serviço: ")
+    print("\n=== BARBEIROS DISPONÍVEIS ===")
+    listar_barbeiros()
+
+    print("\n=== SERVIÇOS DISPONÍVEIS ===")
+    listar_servicos()
+
+    id_barbeiro = input("Digite o ID do barbeiro: ")
+    id_servico = input("Digite o ID do serviço: ")
     data = input("Digite a data (dd/mm/aaaa): ")
     hora = input("Digite a hora (hh:mm): ")
+
+    # ==========================
+    # VALIDAÇÃO DA DATA
+    # ==========================
+
+    try:
+
+        data_agendamento = datetime.strptime(
+            data,
+            "%d/%m/%Y"
+        )
+
+    except ValueError:
+
+        print("Data inválida!")
+        return
+
+    dia_semana = data_agendamento.weekday()
+
+    if dia_semana == 0:
+        print("A barbearia não funciona às segundas-feiras!")
+        return
+
+    if dia_semana == 6:
+        print("A barbearia não funciona aos domingos!")
+        return
+
+    hoje = datetime.now()
+
+    if data_agendamento.date() < hoje.date():
+        print("Não é possível agendar em datas passadas!")
+        return
+
+    # ==========================
+    # VALIDAÇÃO DA HORA
+    # ==========================
+
+    try:
+
+        hora_agendamento = datetime.strptime(
+            hora,
+            "%H:%M"
+        )
+
+    except ValueError:
+
+        print("Hora inválida!")
+        return
+
+    # ==========================
+    # REGRAS DE FUNCIONAMENTO
+    # ==========================
+
+    # Sábado
+    if dia_semana == 5:
+
+        if hora_agendamento.hour < 8 or hora_agendamento.hour > 17:
+
+            print("Aos sábados atendemos apenas das 08:00 às 17:00!")
+            return
+
+    # Terça a Sexta
+    elif dia_semana in [1, 2, 3, 4]:
+
+        if hora_agendamento.hour < 8 or hora_agendamento.hour > 19:
+
+            print("Horário fora do expediente!")
+            return
 
     conn = conectar()
     cursor = conn.cursor()
 
+    # ==========================
+    # CLIENTE LOGADO
+    # ==========================
+
     cursor.execute("""
-        SELECT *
-        FROM agendamentos
-        WHERE profissional_id = ?
-        AND data = ?
-        AND hora = ?
+        SELECT id
+        FROM clientes
+        WHERE id_usuario = ?
+    """, (id_usuario,))
+
+    cliente = cursor.fetchone()
+
+    if not cliente:
+        print("Cliente não encontrado!")
+        conn.close()
+        return
+
+    id_cliente = cliente[0]
+
+    # ==========================
+    # VERIFICA BARBEIRO
+    # ==========================
+
+    cursor.execute("""
+        SELECT id
+        FROM profissionais
+        WHERE id = ?
+    """, (id_barbeiro,))
+
+    profissional = cursor.fetchone()
+
+    if not profissional:
+        print("Barbeiro não encontrado!")
+        conn.close()
+        return
+
+    # ==========================
+    # VERIFICA SERVIÇO
+    # ==========================
+
+    cursor.execute("""
+        SELECT id
+        FROM servicos
+        WHERE id = ?
+    """, (id_servico,))
+
+    servico = cursor.fetchone()
+
+    if not servico:
+        print("Serviço não encontrado!")
+        conn.close()
+        return
+    
+    # Busca a duração do serviço
+
+    cursor.execute("""
+        SELECT duracao
+        FROM servicos
+        WHERE id = ?
+    """, (id_servico,))
+
+    duracao_servico = cursor.fetchone()[0]
+
+    inicio_novo = datetime.strptime(
+    f"{data} {hora}",
+    "%d/%m/%Y %H:%M"
+    )
+
+    fim_novo = inicio_novo + timedelta(
+    minutes=duracao_servico
+    )
+
+    print(f"Serviço selecionado: {duracao_servico} minutos")
+
+# ==========================
+# VERIFICA CONFLITO
+# ==========================
+
+    cursor.execute("""
+    SELECT
+        ag.hora,
+        serv.duracao
+
+    FROM agendamentos ag
+
+    INNER JOIN servicos serv
+        ON ag.id_servico = serv.id
+
+    WHERE ag.id_barbeiro = ?
+    AND ag.data = ?
     """, (
-        profissional_id,
-        data,
-        hora
+        id_barbeiro,
+        data
     ))
 
-    conflito = cursor.fetchone()
+    agendamentos_existentes = cursor.fetchall()
+
+
+    conflito = False
+
+    for hora_existente, duracao_existente in agendamentos_existentes:
+
+        inicio_existente = datetime.strptime(
+            f"{data} {hora_existente}",
+            "%d/%m/%Y %H:%M"
+        )
+
+        fim_existente = inicio_existente + timedelta(
+            minutes=duracao_existente
+        )
+
+
+        if (
+            inicio_novo < fim_existente
+            and
+            fim_novo > inicio_existente
+        ):
+            conflito = True
+            break
 
     if conflito:
+
         print("Horário já está ocupado!")
 
     else:
+
         cursor.execute("""
             INSERT INTO agendamentos
             (
-                cliente_id,
-                profissional_id,
-                servico_id,
+                id_cliente,
+                id_barbeiro,
+                id_servico,
                 data,
                 hora
             )
             VALUES (?, ?, ?, ?, ?)
         """, (
-            cliente_id,
-            profissional_id,
-            servico_id,
+            id_cliente,
+            id_barbeiro,
+            id_servico,
             data,
             hora
         ))
@@ -186,9 +370,9 @@ def atualizar_agendamento():
         cursor.execute("""
             UPDATE agendamentos
             SET
-                cliente_id = ?,
-                profissional_id = ?,
-                servico_id = ?,
+                id_cliente = ?,
+                id_barbeiro = ?,
+                id_servico = ?,
                 data = ?,
                 hora = ?,
                 status = ?
@@ -215,32 +399,86 @@ def atualizar_agendamento():
 
     conn.close()
 
-def listar_agendamentoJoin():
+def listar_agendamentoJoin(id_usuario=None, perfil=None):
 
     conn = conectar()
     cursor = conn.cursor()
 
-    cursor.execute("""
-    SELECT
-        ag.id,
-        cli.nome AS cliente,
-        prof.nome AS barbeiro,
-        serv.nome AS servico,
-        ag.data,
-        ag.hora,
-        ag.status
+    if perfil == "CLIENTE":
 
-    FROM agendamentos ag
+        cursor.execute("""
+        SELECT
+            ag.id,
+            cli.nome AS cliente,
+            prof.nome AS barbeiro,
+            serv.nome AS servico,
+            ag.data,
+            ag.hora,
+            ag.status
 
-    INNER JOIN clientes cli
-        ON ag.cliente_id = cli.id
+        FROM agendamentos ag
 
-    INNER JOIN profissionais prof
-        ON ag.profissional_id = prof.id
+        INNER JOIN clientes cli
+            ON ag.id_cliente = cli.id
 
-    INNER JOIN servicos serv
-        ON ag.servico_id = serv.id
-""")
+        INNER JOIN profissionais prof
+            ON ag.id_barbeiro = prof.id
+
+        INNER JOIN servicos serv
+            ON ag.id_servico = serv.id
+
+        WHERE cli.id_usuario = ?
+        """, (id_usuario,))
+
+    elif perfil == "BARBEIRO":
+
+        cursor.execute("""
+        SELECT
+            ag.id,
+            cli.nome AS cliente,
+            prof.nome AS barbeiro,
+            serv.nome AS servico,
+            ag.data,
+            ag.hora,
+            ag.status
+
+        FROM agendamentos ag
+
+        INNER JOIN clientes cli
+            ON ag.id_cliente = cli.id
+
+        INNER JOIN profissionais prof
+            ON ag.id_barbeiro = prof.id
+
+        INNER JOIN servicos serv
+            ON ag.id_servico = serv.id
+
+        WHERE prof.id_usuario = ?
+        """, (id_usuario,))
+
+    else:
+
+        cursor.execute("""
+        SELECT
+            ag.id,
+            cli.nome AS cliente,
+            prof.nome AS barbeiro,
+            serv.nome AS servico,
+            ag.data,
+            ag.hora,
+            ag.status
+
+        FROM agendamentos ag
+
+        INNER JOIN clientes cli
+            ON ag.id_cliente = cli.id
+
+        INNER JOIN profissionais prof
+            ON ag.id_barbeiro = prof.id
+
+        INNER JOIN servicos serv
+            ON ag.id_servico = serv.id
+        """)
 
     agendamentos = cursor.fetchall()
 
@@ -248,7 +486,6 @@ def listar_agendamentoJoin():
     print("-" * 90)
 
     for agendamento in agendamentos:
-
         print(f"ID: {agendamento[0]}")
         print(f"Cliente: {agendamento[1]}")
         print(f"Barbeiro: {agendamento[2]}")
@@ -259,3 +496,4 @@ def listar_agendamentoJoin():
         print("-" * 90)
 
     conn.close()
+

@@ -2,7 +2,7 @@ from banco import conectar
 
 def cadastrar_usuario():
 
-    usuario = input("Digite o usuário: ").upper()
+    usuario = input("Digite o usuário: ")
     senha = input("Digite a senha: ")
     perfil = input("Digite o perfil (ADMIN/BARBEIRO/CLIENTE): ").upper()
 

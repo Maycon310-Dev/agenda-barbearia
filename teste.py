@@ -3,14 +3,10 @@ from banco import conectar
 conn = conectar()
 cursor = conn.cursor()
 
-print("\n=== CLIENTES ===")
-cursor.execute("SELECT * FROM clientes")
-for linha in cursor.fetchall():
-    print(linha)
+cursor.execute("DELETE FROM agendamentos")
 
-print("\n=== PROFISSIONAIS ===")
-cursor.execute("SELECT * FROM profissionais")
-for linha in cursor.fetchall():
-    print(linha)
+conn.commit()
+
+print("Agenda limpa!")
 
 conn.close()
