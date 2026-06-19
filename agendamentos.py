@@ -518,10 +518,17 @@ def mostrar_horarios_disponiveis(id_barbeiro, data):
     conn = conectar()
     cursor = conn.cursor()
     cursor.execute("""
-    SELECT hora
-    FROM agendamentos
-    WHERE id_barbeiro = ?
-    AND data = ?
+    SELECT
+        ag.hora,
+        serv.duracao
+
+    FROM agendamentos ag
+
+    INNER JOIN servicos serv
+        ON ag.id_servico = serv.id
+
+    WHERE ag.id_barbeiro = ?
+    AND ag.data = ?
     """, (
         id_barbeiro,
         data
@@ -529,9 +536,26 @@ def mostrar_horarios_disponiveis(id_barbeiro, data):
 
     horarios_ocupados = []
 
-    for horario in cursor.fetchall():
+    for hora_agendada, duracao in cursor.fetchall():
 
-        horarios_ocupados.append(horario[0])
+        inicio = datetime.strptime(
+            f"{data} {hora_agendada}",
+            "%d/%m/%Y %H:%M"
+        )
+
+        fim = inicio + timedelta(
+            minutes=duracao
+        )
+
+        atual = inicio
+
+        while atual < fim:
+
+            horarios_ocupados.append(
+                atual.strftime("%H:%M")
+            )
+
+            atual += timedelta(minutes=30)
 
     for hora in range(8, 20):
 
