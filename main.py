@@ -3,7 +3,7 @@ from banco import criar_tabela
 from clientes import (cadastrar_cliente, listar_clientes, buscar_cliente, excluir_cliente, atualizar_cliente)
 from servicos import (cadastrar_servico,  listar_servicos, excluir_servico, atualizar_servico)
 from profissionais import (cadastrar_barbeiro, listar_barbeiros, buscar_barbeiro)
-from agendamentos import (agendar_horario, listar_agendamentoJoin, cancelar_agendamento, buscar_agendamento, atualizar_agendamento)
+from agendamentos import (agendar_horario, listar_agendamentoJoin, cancelar_agendamento, buscar_agendamento, atualizar_agendamento, atualizar_meu_agendamento)
 from usuarios import (cadastrar_cliente_com_usuario,cadastrar_barbeiro_com_usuario)
 from login import (login)
 
@@ -96,12 +96,12 @@ while True:
 
             elif opcao == "4":
                 limpar_tela()
-                cancelar_agendamento()
+                cancelar_agendamento(usuario_logado[0])
                 voltar_menu()
 
             elif opcao == "5":
                 limpar_tela()
-                atualizar_agendamento()
+                atualizar_meu_agendamento(usuario_logado[0])
                 voltar_menu()
 
             elif opcao == "0":

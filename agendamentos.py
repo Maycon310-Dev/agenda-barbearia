@@ -23,13 +23,17 @@ def agendar_horario(id_usuario):
 
     data = input("Digite a data (dd/mm/aaaa): ")
 
-    mostrar_horarios_disponiveis(
+    horarios_livres = mostrar_horarios_disponiveis(
         id_barbeiro,
         data
     )
 
     hora = input("Digite a hora (hh:mm): ")
 
+    if hora not in horarios_livres:
+
+        print("Escolha um horário disponível da lista!")
+        return
     # ==========================
     # VALIDAÇÃO DA DATA
     # ==========================
@@ -274,20 +278,91 @@ def listar_agendamentos():
 
     conn.close()
 
-def cancelar_agendamento():
-    id_agendamento = input("Digite o ID de agendamento para cancelamento: ")
-    conn = conectar()
-    cursor= conn.cursor()
+def cancelar_agendamento(id_usuario):
 
-    cursor.execute ("DELETE FROM agendamentos WHERE id = ?" , (id_agendamento,))
+    conn = conectar()
+    cursor = conn.cursor()
+
+    # Descobre o cliente logado
+
+    cursor.execute("""
+        SELECT id
+        FROM clientes
+        WHERE id_usuario = ?
+    """, (id_usuario,))
+
+    cliente = cursor.fetchone()
+
+    if not cliente:
+
+        print("Cliente não encontrado!")
+        conn.close()
+        return
+
+    id_cliente = cliente[0]
+
+    # Lista apenas os agendamentos dele
+
+    cursor.execute("""
+        SELECT
+            ag.id,
+            serv.nome,
+            ag.data,
+            ag.hora
+
+        FROM agendamentos ag
+
+        INNER JOIN servicos serv
+            ON ag.id_servico = serv.id
+
+        WHERE ag.id_cliente = ?
+    """, (id_cliente,))
+
+    agendamentos = cursor.fetchall()
+
+    if not agendamentos:
+
+        print("Você não possui agendamentos.")
+        conn.close()
+        return
+
+    print("\n=== SEUS AGENDAMENTOS ===")
+
+    for agendamento in agendamentos:
+
+        print(
+            f"ID: {agendamento[0]} | "
+            f"{agendamento[1]} | "
+            f"{agendamento[2]} | "
+            f"{agendamento[3]}"
+        )
+
+    id_agendamento = input(
+        "\nDigite o ID do agendamento para cancelar: "
+    )
+
+    cursor.execute("""
+        DELETE FROM agendamentos
+        WHERE id = ?
+        AND id_cliente = ?
+    """, (
+        id_agendamento,
+        id_cliente
+    ))
+
     conn.commit()
 
     if cursor.rowcount > 0:
-        print ("Agendamento excluido com sucesso.")
+
+        print("Agendamento cancelado com sucesso!")
+
     else:
-        print("Agendamento não encontrado. ")
+
+        print("Agendamento não encontrado!")
+
     conn.close()
 
+    
 def buscar_agendamento():
     id_agendamento = input("Digite o ID do agendamento: ")
 
@@ -413,6 +488,126 @@ def atualizar_agendamento():
 
     conn.close()
 
+def atualizar_meu_agendamento(id_usuario):
+
+    conn = conectar()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        SELECT id
+        FROM clientes
+        WHERE id_usuario = ?
+    """, (id_usuario,))
+
+    cliente = cursor.fetchone()
+
+    if not cliente:
+
+        print("Cliente não encontrado!")
+        conn.close()
+        return
+
+    id_cliente = cliente[0]
+
+    cursor.execute("""
+        SELECT
+            ag.id,
+            serv.nome,
+            ag.data,
+            ag.hora
+
+        FROM agendamentos ag
+
+        INNER JOIN servicos serv
+            ON ag.id_servico = serv.id
+
+        WHERE ag.id_cliente = ?
+    """, (id_cliente,))
+
+    agendamentos = cursor.fetchall()
+
+    if not agendamentos:
+
+        print("Você não possui agendamentos.")
+        conn.close()
+        return
+
+    print("\n=== SEUS AGENDAMENTOS ===")
+
+    for agendamento in agendamentos:
+
+        print(
+            f"ID: {agendamento[0]} | "
+            f"{agendamento[1]} | "
+            f"{agendamento[2]} | "
+            f"{agendamento[3]}"
+        )
+
+    id_agendamento = input(
+        "\nDigite o ID do agendamento para atualizar: "
+    )
+    cursor.execute("""
+        SELECT *
+        FROM agendamentos
+        WHERE id = ?
+        AND id_cliente = ?
+    """, (
+        id_agendamento,
+        id_cliente
+    ))
+
+    agendamento = cursor.fetchone()
+
+    if not agendamento:
+
+        print("Agendamento não encontrado!")
+        conn.close()
+        return
+    
+    print("\n=== DADOS ATUAIS ===")
+    print(f"Data: {agendamento[4]}")
+    print(f"Hora: {agendamento[5]}")
+
+    nova_data = input(
+        "\nDigite a nova data (dd/mm/aaaa): "
+    )
+    mostrar_horarios_disponiveis(
+    agendamento[2],
+    nova_data
+    )
+
+    nova_hora = input(
+    "\nDigite a nova hora (hh:mm): "
+    )
+    cursor.execute("""
+        UPDATE agendamentos
+        SET
+            data = ?,
+            hora = ?
+        WHERE id = ?
+    """, (
+        nova_data,
+        nova_hora,
+        id_agendamento
+    ))
+
+    conn.commit()
+
+    if cursor.rowcount > 0:
+
+        print(
+            "Agendamento atualizado com sucesso!"
+        )
+
+    else:
+
+        print(
+            "Nenhuma alteração realizada."
+        )
+
+    conn.close()
+
+
 def listar_agendamentoJoin(id_usuario=None, perfil=None):
 
     conn = conectar()
@@ -536,6 +731,8 @@ def mostrar_horarios_disponiveis(id_barbeiro, data):
 
     horarios_ocupados = []
 
+    horarios_livres = []
+
     for hora_agendada, duracao in cursor.fetchall():
 
         inicio = datetime.strptime(
@@ -562,11 +759,22 @@ def mostrar_horarios_disponiveis(id_barbeiro, data):
         horario_cheio = f"{hora:02d}:00"
 
         if horario_cheio not in horarios_ocupados:
+
             print(horario_cheio)
+
+            horarios_livres.append(
+                horario_cheio
+            )
 
         horario_meia = f"{hora:02d}:30"
 
         if horario_meia not in horarios_ocupados:
+
             print(horario_meia)
 
+            horarios_livres.append(
+                horario_meia
+            )
     conn.close()
+    return horarios_livres
+
