@@ -778,3 +778,76 @@ def mostrar_horarios_disponiveis(id_barbeiro, data):
     conn.close()
     return horarios_livres
 
+def gerenciar_status_agendamentos():
+
+    conn = conectar()
+    cursor = conn.cursor()
+
+    print("\n=== GERENCIAR STATUS DE AGENDAMENTOS ===")
+
+    cursor.execute("""
+        SELECT id, data, hora, status
+        FROM agendamentos
+        ORDER BY data, hora
+    """)
+
+    agendamentos = cursor.fetchall()
+
+    if not agendamentos:
+        print("Nenhum agendamento encontrado.")
+        conn.close()
+        return
+
+    for agendamento in agendamentos:
+        print(
+            f"ID: {agendamento[0]} | "
+            f"{agendamento[1]} | "
+            f"{agendamento[2]} | "
+            f"{agendamento[3]}"
+        )
+
+    print("\n=== ALTERAR STATUS ===")
+    print("1 - AGENDADO")
+    print("2 - CONCLUIDO")
+    print("3 - FALTOU")
+    print("0 - Cancelar")
+
+    opcao = input("\nEscolha o novo status: ")
+
+    status_map = {
+        "1": "AGENDADO",
+        "2": "CONCLUIDO",
+        "3": "FALTOU"
+    }
+
+    if opcao == "0":
+        print("Operação cancelada.")
+        conn.close()
+        return
+
+    if opcao not in status_map:
+        print("Opção inválida.")
+        conn.close()
+        return
+
+    novo_status = status_map[opcao]
+
+    id_agendamento = input("\nDigite o ID do agendamento: ")
+
+    cursor.execute("""
+        UPDATE agendamentos
+        SET status = ?
+        WHERE id = ?
+    """, (
+        novo_status,
+        id_agendamento
+    ))
+
+    conn.commit()
+
+    if cursor.rowcount > 0:
+        print(f"Status alterado para {novo_status}!")
+    else:
+        print("Agendamento não encontrado!")
+
+    conn.close()

@@ -3,10 +3,11 @@ from banco import conectar
 conn = conectar()
 cursor = conn.cursor()
 
-cursor.execute("DELETE FROM agendamentos")
+cursor.execute("""
+SELECT id, status
+FROM agendamentos
+""")
 
-conn.commit()
-
-print("Agenda limpa!")
+print(cursor.fetchall())
 
 conn.close()

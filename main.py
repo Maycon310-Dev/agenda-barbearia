@@ -3,9 +3,10 @@ from banco import criar_tabela
 from clientes import (cadastrar_cliente, listar_clientes, buscar_cliente, excluir_cliente, atualizar_cliente)
 from servicos import (cadastrar_servico,  listar_servicos, excluir_servico, atualizar_servico)
 from profissionais import (cadastrar_barbeiro, listar_barbeiros, buscar_barbeiro)
-from agendamentos import (agendar_horario, listar_agendamentoJoin, cancelar_agendamento, buscar_agendamento, atualizar_agendamento, atualizar_meu_agendamento)
+from agendamentos import (agendar_horario, listar_agendamentoJoin, cancelar_agendamento, buscar_agendamento, atualizar_agendamento, atualizar_meu_agendamento, gerenciar_status_agendamentos)
 from usuarios import (cadastrar_cliente_com_usuario,cadastrar_barbeiro_com_usuario)
 from login import (login)
+from relatorios import dashboard, relatorio_financeiro,  relatorio_por_periodo
 
 
 def limpar_tela():
@@ -127,6 +128,7 @@ while True:
             print("1 - Minha Agenda")
             print("2 - Buscar Cliente")
             print("3 - Listar Agendamentos")
+            print("4 - Gerenciar Status")
             print("0 - Logout")
 
             opcao = input("\nEscolha: ")
@@ -141,6 +143,11 @@ while True:
 
             elif opcao == "3":
                 listar_agendamentoJoin(usuario_logado[0],perfil)
+                voltar_menu()
+
+            elif opcao == "4":
+                gerenciar_status_agendamentos()
+                voltar_menu()
                 voltar_menu()
 
             elif opcao == "0":
@@ -180,6 +187,10 @@ while True:
             print("\nAGENDAMENTOS")
             print("13 - Buscar Agendamento")
 
+            print("\nRELATORIOS")
+            print("14 - Dashboard")
+            print("15 - Relatorio Financeiro")
+            print("16 - Relatorio Financeiro Por perido")
             print("\n0 - Voltar")
 
             opcao = input("\nEscolha: ")
@@ -249,6 +260,24 @@ while True:
                 buscar_agendamento()
                 voltar_menu()
 
+            elif opcao == "14":
+
+                limpar_tela()
+                dashboard()
+                voltar_menu()
+
+            elif opcao == "15":
+
+                limpar_tela()
+                relatorio_financeiro()
+                voltar_menu()
+
+            elif opcao == "16":
+
+                limpar_tela()
+                relatorio_por_periodo()
+                voltar_menu()
+
             elif opcao == "0":
                 break
 
@@ -259,3 +288,4 @@ while True:
     else:
         print("Opção inválida!")
         voltar_menu()
+
